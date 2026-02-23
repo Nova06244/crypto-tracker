@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import Papa from "papaparse";
-import { useEffect, useMemo, useState } from "react";
 
 const INITIAL_ASSETS = [
   { id: 1, name: "SOLANA", ticker: "SOL", objective: "X10", color: "#14F195", investPerMonth: {} },
@@ -42,6 +41,14 @@ const formatEUR = (val) => {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2 }).format(n);
 };
 
+function toNumber(val) {
+  if (val == null) return 0;
+  // gère "1 234,56" en FR
+  const s = String(val).trim().replace(/\s/g, "").replace(",", ".");
+  const n = parseFloat(s);
+  return Number.isNaN(n) ? 0 : n;
+}
+
 function normalizeMonth(value) {
   if (value == null) return null;
   const v = String(value).trim().toUpperCase();
@@ -69,6 +76,11 @@ function normalizeMonth(value) {
   return map[v] ?? null;
 }
 
+// ID unique pour chaque entrée (pour delete fiable)
+function makeEntryId() {
+  return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
 function importCsvFile(file, assets, setEntries) {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
@@ -78,9 +90,6 @@ function importCsvFile(file, assets, setEntries) {
         try {
           const rows = results.data;
 
-          // ⬇️ Mapping des colonnes CSV (tu pourras ajuster si besoin)
-          // Colonnes conseillées dans ton CSV :
-          // Ticker | Mois | Année | Investissement | PrixAchat | Quantité | StopLoss | TakeProfit
           const get = (r, keys) => {
             for (const k of keys) {
               if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== "") return r[k];
@@ -93,9 +102,7 @@ function importCsvFile(file, assets, setEntries) {
               const ticker = String(get(r, ["Ticker", "ticker", "TICKER"])).trim().toUpperCase();
               const name = String(get(r, ["Actif", "Nom", "name", "NAME"])).trim().toUpperCase();
 
-              const asset = assets.find(
-                (a) => a.ticker.toUpperCase() === ticker || a.name.toUpperCase() === name
-              );
+              const asset = assets.find((a) => a.ticker.toUpperCase() === ticker || a.name.toUpperCase() === name);
               if (!asset) return null;
 
               const month = normalizeMonth(get(r, ["Mois", "mois", "Month", "month"]));
@@ -104,6 +111,7 @@ function importCsvFile(file, assets, setEntries) {
               if (month === null || Number.isNaN(year)) return null;
 
               return {
+                id: makeEntryId(),
                 assetId: asset.id,
                 month,
                 year,
@@ -116,7 +124,6 @@ function importCsvFile(file, assets, setEntries) {
             })
             .filter(Boolean);
 
-          // remplace tout l'historique actuel par le CSV
           setEntries(entriesFromFile);
 
           resolve({
@@ -131,18 +138,6 @@ function importCsvFile(file, assets, setEntries) {
     });
   });
 }
-function toNumber(val) {
-  if (val == null) return 0;
-  // gère "1 234,56" en FR
-  const s = String(val).trim().replace(/\s/g, "").replace(",", ".");
-  const n = parseFloat(s);
-  return Number.isNaN(n) ? 0 : n;
-}
-const formatPercent = (val) => {
-  if (val === null || val === undefined || Number.isNaN(val)) return "—";
-  const sign = val >= 0 ? "+" : "";
-  return `${sign}${val.toFixed(1)}%`;
-};
 
 // Icon components
 const PlusIcon = () => (
@@ -156,13 +151,6 @@ const TrashIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <polyline points="3 6 5 6 21 6" />
     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
 );
 
@@ -200,24 +188,10 @@ const WalletIcon = () => (
 function Modal({ isOpen, onClose, title, children }) {
   if (!isOpen) return null;
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div
         onClick={onClose}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "rgba(0,0,0,0.7)",
-          backdropFilter: "blur(8px)",
-        }}
+        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
       />
       <div
         style={{
@@ -233,15 +207,7 @@ function Modal({ isOpen, onClose, title, children }) {
           animation: "modalIn 0.25s ease",
         }}
       >
-        <h3
-          style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 22,
-            color: "#fff",
-            letterSpacing: 2,
-            marginBottom: 20,
-          }}
-        >
+        <h3 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 22, color: "#fff", letterSpacing: 2, marginBottom: 20 }}>
           {title}
         </h3>
         {children}
@@ -272,6 +238,7 @@ function AddInvestmentModal({ isOpen, onClose, assets, year, onAdd }) {
   const handleSubmit = () => {
     if (!assetId || !investment) return;
     onAdd({
+      id: makeEntryId(),
       assetId: parseInt(assetId, 10),
       month,
       year,
@@ -316,11 +283,7 @@ function AddInvestmentModal({ isOpen, onClose, assets, year, onAdd }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             <label style={labelStyle}>Actif</label>
-            <select
-              value={assetId}
-              onChange={(e) => setAssetId(e.target.value)}
-              style={{ ...inputStyle, cursor: "pointer", appearance: "auto" }}
-            >
+            <select value={assetId} onChange={(e) => setAssetId(e.target.value)} style={{ ...inputStyle, cursor: "pointer", appearance: "auto" }}>
               <option value="">Choisir…</option>
               {assets.map((a) => (
                 <option key={a.id} value={a.id} style={{ background: "#1a1a2e" }}>
@@ -332,11 +295,7 @@ function AddInvestmentModal({ isOpen, onClose, assets, year, onAdd }) {
 
           <div>
             <label style={labelStyle}>Mois</label>
-            <select
-              value={month}
-              onChange={(e) => setMonth(parseInt(e.target.value, 10))}
-              style={{ ...inputStyle, cursor: "pointer", appearance: "auto" }}
-            >
+            <select value={month} onChange={(e) => setMonth(parseInt(e.target.value, 10))} style={{ ...inputStyle, cursor: "pointer", appearance: "auto" }}>
               {MONTHS.map((m, i) => (
                 <option key={i} value={i} style={{ background: "#1a1a2e" }}>
                   {m}
@@ -349,61 +308,27 @@ function AddInvestmentModal({ isOpen, onClose, assets, year, onAdd }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             <label style={labelStyle}>Investissement (€)</label>
-            <input
-              type="number"
-              value={investment}
-              onChange={(e) => setInvestment(e.target.value)}
-              placeholder="100.00"
-              style={inputStyle}
-            />
+            <input type="number" value={investment} onChange={(e) => setInvestment(e.target.value)} placeholder="100.00" style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Prix d'achat (€)</label>
-            <input
-              type="number"
-              value={buyPrice}
-              onChange={(e) => setBuyPrice(e.target.value)}
-              placeholder="0.00"
-              style={inputStyle}
-              step="any"
-            />
+            <input type="number" value={buyPrice} onChange={(e) => setBuyPrice(e.target.value)} placeholder="0.00" style={inputStyle} step="any" />
           </div>
         </div>
 
         <div>
           <label style={labelStyle}>Quantité (nb de jetons)</label>
-          <input
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            placeholder="0"
-            style={inputStyle}
-            step="any"
-          />
+          <input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="0" style={inputStyle} step="any" />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             <label style={labelStyle}>Stop-Loss (€)</label>
-            <input
-              type="number"
-              value={stopLoss}
-              onChange={(e) => setStopLoss(e.target.value)}
-              placeholder="0.00"
-              style={inputStyle}
-              step="any"
-            />
+            <input type="number" value={stopLoss} onChange={(e) => setStopLoss(e.target.value)} placeholder="0.00" style={inputStyle} step="any" />
           </div>
           <div>
             <label style={labelStyle}>Take-Profit (€)</label>
-            <input
-              type="number"
-              value={takeProfit}
-              onChange={(e) => setTakeProfit(e.target.value)}
-              placeholder="0.00"
-              style={inputStyle}
-              step="any"
-            />
+            <input type="number" value={takeProfit} onChange={(e) => setTakeProfit(e.target.value)} placeholder="0.00" style={inputStyle} step="any" />
           </div>
         </div>
 
@@ -541,18 +466,15 @@ function AddAssetModal({ isOpen, onClose, onAdd }) {
 }
 
 // ==================== ASSET DETAIL CARD ====================
-function AssetCard({ asset, entries, year, onDelete }) {
+function AssetCard({ asset, onDelete }) {
   const [expanded, setExpanded] = useState(false);
 
-  const totalInvested = entries.reduce((s, e) => s + (e.investment || 0), 0);
-  const totalQuantity = entries.reduce((s, e) => s + (e.quantity || 0), 0);
+  // ✅ CUMUL JUSQU'À L'ANNÉE (incluse)
+  const totalInvested = asset.totalInvestedCum;
+  const totalQuantity = asset.totalQtyCum;
+  const avgBuyPrice = asset.avgBuyPriceCum;
 
-  const avgBuyPrice =
-    entries.length > 0
-      ? entries.reduce((s, e) => s + (e.buyPrice || 0) * (e.investment || 0), 0) / (totalInvested || 1)
-      : 0;
-
-  const lastEntry = entries[entries.length - 1];
+  const lastEntry = asset.entriesCum[asset.entriesCum.length - 1];
   const lastStopLoss = lastEntry?.stopLoss || 0;
   const lastTakeProfit = lastEntry?.takeProfit || 0;
 
@@ -625,7 +547,7 @@ function AssetCard({ asset, entries, year, onDelete }) {
           </div>
 
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
-            {entries.length} investissement{entries.length > 1 ? "s" : ""} • {formatEUR(totalInvested)}
+            {asset.entriesCum.length} investissement{asset.entriesCum.length > 1 ? "s" : ""} • {formatEUR(totalInvested)}
           </div>
         </div>
 
@@ -671,23 +593,23 @@ function AssetCard({ asset, entries, year, onDelete }) {
             ))}
           </div>
 
-          {/* Monthly entries */}
+          {/* History entries (cumul) */}
           <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.3)", letterSpacing: 1.5, marginBottom: 8, fontFamily: "'DM Sans', sans-serif" }}>
-            DÉTAIL PAR MOIS
+            HISTORIQUE (CUMUL JUSQU’À CETTE ANNÉE)
           </div>
 
-          {entries.length === 0 ? (
+          {asset.entriesCum.length === 0 ? (
             <div style={{ padding: 16, textAlign: "center", color: "rgba(255,255,255,0.25)", fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}>
               Aucun investissement enregistré
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {entries.map((e, i) => (
+              {asset.entriesCum.map((e) => (
                 <div
-                  key={i}
+                  key={e.id}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "80px 1fr 1fr 1fr 36px",
+                    gridTemplateColumns: "90px 1fr 1fr 1fr 36px",
                     gap: 8,
                     alignItems: "center",
                     padding: "8px 12px",
@@ -702,12 +624,10 @@ function AssetCard({ asset, entries, year, onDelete }) {
                   </span>
                   <span style={{ color: "#fff" }}>{formatEUR(e.investment)}</span>
                   <span style={{ color: "rgba(255,255,255,0.5)" }}>{e.buyPrice > 0 ? `@ ${formatEUR(e.buyPrice)}` : "—"}</span>
-                  <span style={{ color: "rgba(255,255,255,0.5)" }}>
-                    {e.quantity > 0 ? `${e.quantity.toLocaleString("fr-FR")} u.` : "—"}
-                  </span>
+                  <span style={{ color: "rgba(255,255,255,0.5)" }}>{e.quantity > 0 ? `${e.quantity.toLocaleString("fr-FR")} u.` : "—"}</span>
 
                   <button
-                    onClick={() => onDelete(asset.id, i)}
+                    onClick={() => onDelete(e.id)}
                     style={{
                       background: "none",
                       border: "none",
@@ -752,50 +672,60 @@ export default function CryptoTracker() {
   const [activeView, setActiveView] = useState("dashboard"); // dashboard | table
   const [nextId, setNextId] = useState(14);
 
-  // Compute per-asset data
+  // ✅ IMPORTANT : calculs cumulés jusqu'à l'année sélectionnée
   const assetData = useMemo(() => {
     return assets
       .map((asset) => {
-        const assetEntries = entries
+        const entriesCum = entries
+          .filter((e) => e.assetId === asset.id && e.year <= year)
+          .sort((a, b) => (a.year !== b.year ? a.year - b.year : a.month - b.month));
+
+        const entriesYear = entries
           .filter((e) => e.assetId === asset.id && e.year === year)
           .sort((a, b) => a.month - b.month);
 
         const monthlyData = Array(12).fill(0);
-        assetEntries.forEach((e) => {
+        entriesYear.forEach((e) => {
           monthlyData[e.month] += e.investment || 0;
         });
 
-        const totalInvested = assetEntries.reduce((s, e) => s + (e.investment || 0), 0);
-        const totalQty = assetEntries.reduce((s, e) => s + (e.quantity || 0), 0);
+        const totalInvestedCum = entriesCum.reduce((s, e) => s + (e.investment || 0), 0);
+        const totalQtyCum = entriesCum.reduce((s, e) => s + (e.quantity || 0), 0);
 
-        return { ...asset, entries: assetEntries, monthlyData, totalInvested, totalQty };
+        // Même formule que ton code : moyenne pondérée par investissement (conservée)
+        const avgBuyPriceCum =
+          entriesCum.length > 0
+            ? entriesCum.reduce((s, e) => s + (e.buyPrice || 0) * (e.investment || 0), 0) / (totalInvestedCum || 1)
+            : 0;
+
+        return {
+          ...asset,
+          entriesCum,
+          entriesYear,
+          monthlyData,
+          totalInvestedCum,
+          totalQtyCum,
+          avgBuyPriceCum,
+        };
       })
-      .sort((a, b) => b.totalInvested - a.totalInvested);
+      .sort((a, b) => b.totalInvestedCum - a.totalInvestedCum);
   }, [assets, entries, year]);
 
-  const totalInvested = assetData.reduce((s, a) => s + a.totalInvested, 0);
+  // ✅ TOTALS du dashboard = cumulés jusqu'à l'année sélectionnée
+  const totalInvested = assetData.reduce((s, a) => s + a.totalInvestedCum, 0);
 
+  // ✅ Histogramme mensuel = uniquement année sélectionnée
   const totalMonthly = Array(12).fill(0);
   assetData.forEach((a) => a.monthlyData.forEach((v, i) => (totalMonthly[i] += v)));
 
   const maxMonthly = Math.max(...totalMonthly, 1);
-  const activeAssets = assetData.filter((a) => a.totalInvested > 0).length;
+  const activeAssets = assetData.filter((a) => a.totalInvestedCum > 0).length;
 
   const handleAddInvestment = (data) => setEntries((prev) => [...prev, data]);
 
-  const handleDeleteEntry = (assetId, entryIndex) => {
-    const assetEntries = entries
-      .filter((e) => e.assetId === assetId && e.year === year)
-      .sort((a, b) => a.month - b.month);
-
-    const entryToDelete = assetEntries[entryIndex];
-    if (!entryToDelete) return;
-
-    setEntries((prev) => {
-      const idx = prev.indexOf(entryToDelete);
-      if (idx === -1) return prev;
-      return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
-    });
+  // ✅ Delete fiable par ID
+  const handleDeleteEntryById = (entryId) => {
+    setEntries((prev) => prev.filter((e) => e.id !== entryId));
   };
 
   const handleAddAsset = (data) => {
@@ -815,24 +745,12 @@ export default function CryptoTracker() {
       }}
     >
       {/* Google Fonts */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap"
-        rel="stylesheet"
-      />
+      <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
       <style>{`
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.95) translateY(10px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
+        @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         select option { background: #1a1a2e; color: #fff; }
         input:focus, select:focus { border-color: rgba(0,210,255,0.5) !important; }
         ::-webkit-scrollbar { width: 6px; }
@@ -841,28 +759,8 @@ export default function CryptoTracker() {
       `}</style>
 
       {/* Ambient background effects */}
-      <div
-        style={{
-          position: "fixed",
-          top: -200,
-          right: -200,
-          width: 600,
-          height: 600,
-          background: "radial-gradient(circle, rgba(0,210,255,0.06) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          position: "fixed",
-          bottom: -300,
-          left: -200,
-          width: 700,
-          height: 700,
-          background: "radial-gradient(circle, rgba(20,241,149,0.04) 0%, transparent 70%)",
-          pointerEvents: "none",
-        }}
-      />
+      <div style={{ position: "fixed", top: -200, right: -200, width: 600, height: 600, background: "radial-gradient(circle, rgba(0,210,255,0.06) 0%, transparent 70%)", pointerEvents: "none" }} />
+      <div style={{ position: "fixed", bottom: -300, left: -200, width: 700, height: 700, background: "radial-gradient(circle, rgba(20,241,149,0.04) 0%, transparent 70%)", pointerEvents: "none" }} />
 
       {/* Header */}
       <header
@@ -907,9 +805,7 @@ export default function CryptoTracker() {
               >
                 INVESTISSEMENT CRYPTO
               </h1>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: 2, marginTop: 2 }}>
-                PORTFOLIO TRACKER
-              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: 2, marginTop: 2 }}>PORTFOLIO TRACKER</div>
             </div>
           </div>
 
@@ -923,9 +819,7 @@ export default function CryptoTracker() {
                 <ChevronIcon dir="left" />
               </button>
 
-              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 2, color: "#fff", minWidth: 60, textAlign: "center" }}>
-                {year}
-              </span>
+              <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, letterSpacing: 2, color: "#fff", minWidth: 60, textAlign: "center" }}>{year}</span>
 
               <button
                 onClick={() => setYear((y) => y + 1)}
@@ -1030,51 +924,14 @@ export default function CryptoTracker() {
         {/* KPI Cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
           {[
-            {
-              label: "TOTAL INVESTI",
-              value: formatEUR(totalInvested),
-              sub: `${year}`,
-              gradient: "linear-gradient(135deg, #00d2ff22, #3a7bd522)",
-              accent: "#00d2ff",
-            },
-            {
-              label: "ACTIFS EN PORTEFEUILLE",
-              value: activeAssets.toString(),
-              sub: `sur ${assets.length} suivis`,
-              gradient: "linear-gradient(135deg, #14F19522, #0d996622)",
-              accent: "#14F195",
-            },
-            {
-              label: "INVESTISSEMENTS",
-              value: entries.filter((e) => e.year === year).length.toString(),
-              sub: "opérations",
-              gradient: "linear-gradient(135deg, #F7931A22, #c9711522)",
-              accent: "#F7931A",
-            },
-            {
-              label: "MOIS ACTIFS",
-              value: totalMonthly.filter((v) => v > 0).length.toString(),
-              sub: `sur 12 en ${year}`,
-              gradient: "linear-gradient(135deg, #E6007A22, #a3005522)",
-              accent: "#E6007A",
-            },
+            { label: "TOTAL INVESTI", value: formatEUR(totalInvested), sub: `cumul ≤ ${year}`, gradient: "linear-gradient(135deg, #00d2ff22, #3a7bd522)", accent: "#00d2ff" },
+            { label: "ACTIFS EN PORTEFEUILLE", value: activeAssets.toString(), sub: `sur ${assets.length} suivis`, gradient: "linear-gradient(135deg, #14F19522, #0d996622)", accent: "#14F195" },
+            { label: "INVESTISSEMENTS", value: entries.filter((e) => e.year <= year).length.toString(), sub: "cumul", gradient: "linear-gradient(135deg, #F7931A22, #c9711522)", accent: "#F7931A" },
+            { label: "MOIS ACTIFS", value: totalMonthly.filter((v) => v > 0).length.toString(), sub: `sur 12 en ${year}`, gradient: "linear-gradient(135deg, #E6007A22, #a3005522)", accent: "#E6007A" },
           ].map((kpi, i) => (
-            <div
-              key={i}
-              style={{
-                background: kpi.gradient,
-                border: `1px solid ${kpi.accent}22`,
-                borderRadius: 16,
-                padding: "20px 22px",
-                animation: `fadeSlideUp 0.4s ease ${i * 0.08}s both`,
-              }}
-            >
-              <div style={{ fontSize: 10, fontWeight: 600, color: kpi.accent, letterSpacing: 2, marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>
-                {kpi.label}
-              </div>
-              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: "#fff", lineHeight: 1, marginBottom: 4 }}>
-                {kpi.value}
-              </div>
+            <div key={i} style={{ background: kpi.gradient, border: `1px solid ${kpi.accent}22`, borderRadius: 16, padding: "20px 22px", animation: `fadeSlideUp 0.4s ease ${i * 0.08}s both` }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: kpi.accent, letterSpacing: 2, marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>{kpi.label}</div>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 32, color: "#fff", lineHeight: 1, marginBottom: 4 }}>{kpi.value}</div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "'DM Sans', sans-serif" }}>{kpi.sub}</div>
             </div>
           ))}
@@ -1083,16 +940,7 @@ export default function CryptoTracker() {
         {activeView === "dashboard" ? (
           <>
             {/* Monthly overview bar */}
-            <div
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 16,
-                padding: "20px 24px",
-                marginBottom: 28,
-                animation: "fadeSlideUp 0.5s ease 0.3s both",
-              }}
-            >
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: "20px 24px", marginBottom: 28, animation: "fadeSlideUp 0.5s ease 0.3s both" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: 2, fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", gap: 8 }}>
                   <ChartIcon /> RÉPARTITION MENSUELLE {year}
@@ -1114,12 +962,8 @@ export default function CryptoTracker() {
                         }}
                       />
                     </div>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: val > 0 ? "#00d2ff" : "rgba(255,255,255,0.2)", letterSpacing: 1, fontFamily: "'DM Sans', sans-serif" }}>
-                      {MONTHS[i]}
-                    </div>
-                    <div style={{ fontSize: 11, color: val > 0 ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.15)", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>
-                      {val > 0 ? formatEUR(val) : "—"}
-                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: val > 0 ? "#00d2ff" : "rgba(255,255,255,0.2)", letterSpacing: 1, fontFamily: "'DM Sans', sans-serif" }}>{MONTHS[i]}</div>
+                    <div style={{ fontSize: 11, color: val > 0 ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.15)", fontFamily: "'DM Sans', sans-serif", marginTop: 2 }}>{val > 0 ? formatEUR(val) : "—"}</div>
                   </div>
                 ))}
               </div>
@@ -1133,77 +977,30 @@ export default function CryptoTracker() {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {assetData.map((asset, i) => (
                 <div key={asset.id} style={{ animation: `fadeSlideUp 0.4s ease ${0.4 + i * 0.05}s both` }}>
-                  <AssetCard asset={asset} entries={asset.entries} year={year} onDelete={handleDeleteEntry} />
+                  <AssetCard asset={asset} onDelete={handleDeleteEntryById} />
                 </div>
               ))}
             </div>
           </>
         ) : (
           /* TABLE VIEW */
-          <div
-            style={{
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 16,
-              overflow: "hidden",
-              animation: "fadeSlideUp 0.4s ease both",
-            }}
-          >
+          <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, overflow: "hidden", animation: "fadeSlideUp 0.4s ease both" }}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'DM Sans', sans-serif", fontSize: 13 }}>
                 <thead>
                   <tr>
-                    <th
-                      style={{
-                        padding: "14px 20px",
-                        textAlign: "left",
-                        background: "rgba(255,255,255,0.04)",
-                        borderBottom: "1px solid rgba(255,255,255,0.08)",
-                        color: "rgba(255,255,255,0.5)",
-                        fontSize: 10,
-                        fontWeight: 600,
-                        letterSpacing: 2,
-                        position: "sticky",
-                        left: 0,
-                        zIndex: 2,
-                        backgroundColor: "#12121f",
-                      }}
-                    >
+                    <th style={{ padding: "14px 20px", textAlign: "left", background: "rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: 2, position: "sticky", left: 0, zIndex: 2, backgroundColor: "#12121f" }}>
                       ACTIF
                     </th>
 
                     {MONTHS.map((m, i) => (
-                      <th
-                        key={i}
-                        style={{
-                          padding: "14px 12px",
-                          textAlign: "center",
-                          background: "rgba(255,255,255,0.04)",
-                          borderBottom: "1px solid rgba(255,255,255,0.08)",
-                          color: "rgba(255,255,255,0.5)",
-                          fontSize: 10,
-                          fontWeight: 600,
-                          letterSpacing: 2,
-                          minWidth: 80,
-                        }}
-                      >
+                      <th key={i} style={{ padding: "14px 12px", textAlign: "center", background: "rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 600, letterSpacing: 2, minWidth: 80 }}>
                         {m}
                       </th>
                     ))}
 
-                    <th
-                      style={{
-                        padding: "14px 16px",
-                        textAlign: "center",
-                        background: "rgba(0,210,255,0.06)",
-                        borderBottom: "1px solid rgba(255,255,255,0.08)",
-                        color: "#00d2ff",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: 2,
-                      }}
-                    >
-                      TOTAL
+                    <th style={{ padding: "14px 16px", textAlign: "center", background: "rgba(0,210,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#00d2ff", fontSize: 10, fontWeight: 700, letterSpacing: 2 }}>
+                      TOTAL (cumul ≤ {year})
                     </th>
                   </tr>
                 </thead>
@@ -1211,74 +1008,29 @@ export default function CryptoTracker() {
                 <tbody>
                   {assetData.map((asset) => (
                     <tr key={asset.id} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <td
-                        style={{
-                          padding: "12px 20px",
-                          position: "sticky",
-                          left: 0,
-                          zIndex: 1,
-                          backgroundColor: "#0d0d1a",
-                          borderRight: "1px solid rgba(255,255,255,0.06)",
-                        }}
-                      >
+                      <td style={{ padding: "12px 20px", position: "sticky", left: 0, zIndex: 1, backgroundColor: "#0d0d1a", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ width: 8, height: 8, borderRadius: "50%", background: asset.color, boxShadow: `0 0 8px ${asset.color}66` }} />
                           <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 14, letterSpacing: 1.5, color: "#fff" }}>{asset.name}</span>
-                          {asset.objective && (
-                            <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4, background: asset.color + "22", color: asset.color }}>
-                              {asset.objective}
-                            </span>
-                          )}
+                          {asset.objective && <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 4, background: asset.color + "22", color: asset.color }}>{asset.objective}</span>}
                         </div>
                       </td>
 
                       {asset.monthlyData.map((val, mi) => (
-                        <td
-                          key={mi}
-                          style={{
-                            padding: "12px 12px",
-                            textAlign: "center",
-                            color: val > 0 ? "#fff" : "rgba(255,255,255,0.12)",
-                            fontSize: 12,
-                            background: val > 0 ? `${asset.color}08` : "transparent",
-                          }}
-                        >
+                        <td key={mi} style={{ padding: "12px 12px", textAlign: "center", color: val > 0 ? "#fff" : "rgba(255,255,255,0.12)", fontSize: 12, background: val > 0 ? `${asset.color}08` : "transparent" }}>
                           {val > 0 ? formatEUR(val) : "—"}
                         </td>
                       ))}
 
-                      <td
-                        style={{
-                          padding: "12px 16px",
-                          textAlign: "center",
-                          fontWeight: 700,
-                          color: asset.totalInvested > 0 ? "#fff" : "rgba(255,255,255,0.12)",
-                          background: "rgba(0,210,255,0.04)",
-                          fontFamily: "'Bebas Neue', sans-serif",
-                          fontSize: 15,
-                        }}
-                      >
-                        {asset.totalInvested > 0 ? formatEUR(asset.totalInvested) : "—"}
+                      <td style={{ padding: "12px 16px", textAlign: "center", fontWeight: 700, color: asset.totalInvestedCum > 0 ? "#fff" : "rgba(255,255,255,0.12)", background: "rgba(0,210,255,0.04)", fontFamily: "'Bebas Neue', sans-serif", fontSize: 15 }}>
+                        {asset.totalInvestedCum > 0 ? formatEUR(asset.totalInvestedCum) : "—"}
                       </td>
                     </tr>
                   ))}
 
                   {/* Total row */}
                   <tr style={{ borderTop: "2px solid rgba(0,210,255,0.2)", background: "rgba(0,210,255,0.04)" }}>
-                    <td
-                      style={{
-                        padding: "14px 20px",
-                        fontWeight: 700,
-                        fontFamily: "'Bebas Neue', sans-serif",
-                        fontSize: 15,
-                        letterSpacing: 2,
-                        color: "#00d2ff",
-                        position: "sticky",
-                        left: 0,
-                        zIndex: 1,
-                        backgroundColor: "#0f1020",
-                      }}
-                    >
+                    <td style={{ padding: "14px 20px", fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", fontSize: 15, letterSpacing: 2, color: "#00d2ff", position: "sticky", left: 0, zIndex: 1, backgroundColor: "#0f1020" }}>
                       TOTAL
                     </td>
 
