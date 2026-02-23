@@ -42,6 +42,40 @@ const formatEUR = (val) => {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2 }).format(n);
 };
 
+function normalizeMonth(value) {
+  if (value == null) return null;
+  const v = String(value).trim().toUpperCase();
+
+  // chiffres 1..12 ou 0..11
+  const n = parseInt(v, 10);
+  if (!Number.isNaN(n) && n >= 0 && n <= 11) return n;
+  if (!Number.isNaN(n) && n >= 1 && n <= 12) return n - 1;
+
+  const map = {
+    JAN: 0, JANVIER: 0,
+    FEV: 1, "FÉV": 1, FEVRIER: 1, "FÉVRIER": 1,
+    MAR: 2, MARS: 2,
+    AVR: 3, AVRIL: 3,
+    MAI: 4,
+    JUN: 5, JUIN: 5,
+    JUL: 6, JUIL: 6, JUILLET: 6,
+    AOU: 7, "AOÛ": 7, AOUT: 7, "AOÛT": 7,
+    SEP: 8, SEPT: 8, SEPTEMBRE: 8,
+    OCT: 9, OCTOBRE: 9,
+    NOV: 10, NOVEMBRE: 10,
+    DEC: 11, "DÉC": 11, DECEMBRE: 11, "DÉCEMBRE": 11,
+  };
+
+  return map[v] ?? null;
+}
+
+function toNumber(val) {
+  if (val == null) return 0;
+  // gère "1 234,56" en FR
+  const s = String(val).trim().replace(/\s/g, "").replace(",", ".");
+  const n = parseFloat(s);
+  return Number.isNaN(n) ? 0 : n;
+}
 const formatPercent = (val) => {
   if (val === null || val === undefined || Number.isNaN(val)) return "—";
   const sign = val >= 0 ? "+" : "";
