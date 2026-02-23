@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import Papa from "papaparse";
+import { useEffect, useMemo, useState } from "react";
 
 const INITIAL_ASSETS = [
   { id: 1, name: "SOLANA", ticker: "SOL", objective: "X10", color: "#14F195", investPerMonth: {} },
