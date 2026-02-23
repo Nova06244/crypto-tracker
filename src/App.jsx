@@ -69,6 +69,68 @@ function normalizeMonth(value) {
   return map[v] ?? null;
 }
 
+function importCsvFile(file, assets, setEntries) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        try {
+          const rows = results.data;
+
+          // ⬇️ Mapping des colonnes CSV (tu pourras ajuster si besoin)
+          // Colonnes conseillées dans ton CSV :
+          // Ticker | Mois | Année | Investissement | PrixAchat | Quantité | StopLoss | TakeProfit
+          const get = (r, keys) => {
+            for (const k of keys) {
+              if (r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== "") return r[k];
+            }
+            return "";
+          };
+
+          const entriesFromFile = rows
+            .map((r) => {
+              const ticker = String(get(r, ["Ticker", "ticker", "TICKER"])).trim().toUpperCase();
+              const name = String(get(r, ["Actif", "Nom", "name", "NAME"])).trim().toUpperCase();
+
+              const asset = assets.find(
+                (a) => a.ticker.toUpperCase() === ticker || a.name.toUpperCase() === name
+              );
+              if (!asset) return null;
+
+              const month = normalizeMonth(get(r, ["Mois", "mois", "Month", "month"]));
+              const year = parseInt(get(r, ["Année", "Annee", "Year", "year"]), 10);
+
+              if (month === null || Number.isNaN(year)) return null;
+
+              return {
+                assetId: asset.id,
+                month,
+                year,
+                investment: toNumber(get(r, ["Investissement", "Montant", "investment"])),
+                buyPrice: toNumber(get(r, ["PrixAchat", "Prix d'achat", "buyPrice"])),
+                quantity: toNumber(get(r, ["Quantité", "Quantite", "quantity"])),
+                stopLoss: toNumber(get(r, ["StopLoss", "Stop-Loss", "stopLoss"])),
+                takeProfit: toNumber(get(r, ["TakeProfit", "Take-Profit", "takeProfit"])),
+              };
+            })
+            .filter(Boolean);
+
+          // remplace tout l'historique actuel par le CSV
+          setEntries(entriesFromFile);
+
+          resolve({
+            imported: entriesFromFile.length,
+            totalRows: rows.length,
+          });
+        } catch (e) {
+          reject(e);
+        }
+      },
+      error: (err) => reject(err),
+    });
+  });
+}
 function toNumber(val) {
   if (val == null) return 0;
   // gère "1 234,56" en FR
