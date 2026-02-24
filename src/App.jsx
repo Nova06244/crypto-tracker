@@ -1,4 +1,4 @@
-import react { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 
 const INITIAL_ASSETS = [
   { id: 1, name: "SOLANA", ticker: "SOL", objective: "X10", color: "#14F195" },
