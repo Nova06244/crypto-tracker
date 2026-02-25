@@ -1,8 +1,8 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "VOTRE_SUPABASE_URL";
-const SUPABASE_KEY = "VOTRE_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://doqtfqpcyohjwjbschcw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_wUDXcznZmwrqBZdov_HbvQ_LIupIrbF";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MONTHS = ["JAN", "FEV", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOUT", "SEPT", "OCT", "NOV", "DEC"];
