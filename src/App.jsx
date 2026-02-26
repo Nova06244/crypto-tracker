@@ -7,6 +7,11 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MONTHS = ["JAN", "FEV", "MARS", "AVR", "MAI", "JUIN", "JUIL", "AOUT", "SEPT", "OCT", "NOV", "DEC"];
 
+const STOCK_TICKERS = {
+  UEC: "UEC", // Uranium Energy Corp
+  
+};
+
 const COINGECKO_IDS = {
   SOL: "solana", ETH: "ethereum", BTC: "bitcoin", XRP: "ripple",
   DOGE: "dogecoin", SHIB: "shiba-inu", PEPE: "pepe", SUI: "sui",
@@ -657,26 +662,86 @@ export default function CryptoTracker() {
   }
 
   async function fetchPrices(assetList) {
-    const tickers = (assetList || assets).map(a => (a.ticker || "").trim().toUpperCase());
-    const ids = tickers.map(t => COINGECKO_IDS[t]).filter(Boolean);
-    if (ids.length === 0) return;
-    setPricesLoading(true);
+  const list = assetList || assets;
+
+  const tickers = list.map(a =>
+    (a.ticker || "").trim().toUpperCase()
+  );
+
+  // ---------- CRYPTO ----------
+  const cryptoIds = tickers
+    .map(t => COINGECKO_IDS[t])
+    .filter(Boolean);
+
+  let cryptoPrices = {};
+
+  if (cryptoIds.length > 0) {
     try {
-      const url = "https://api.coingecko.com/api/v3/simple/price?ids=" + ids.join(",") + "&vs_currencies=eur";
+      const url =
+        "https://api.coingecko.com/api/v3/simple/price?ids=" +
+        cryptoIds.join(",") +
+        "&vs_currencies=eur";
+
       const res = await fetch(url);
       const data = await res.json();
-      const newPrices = {};
+
       tickers.forEach(t => {
         const id = COINGECKO_IDS[t];
-        if (id && data[id] && data[id].eur) newPrices[t] = data[id].eur;
+        if (id && data[id]?.eur) {
+          cryptoPrices[t] = data[id].eur;
+        }
       });
-      setPrices(newPrices);
-      const now = new Date();
-      setLastUpdated(now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0"));
-    } catch (e) { console.warn("Price fetch failed:", e); }
-    setPricesLoading(false);
+    } catch (e) {
+      console.warn("Crypto fetch failed:", e);
+    }
   }
 
+  // ---------- STOCKS ----------
+  const stockTickers = tickers.filter(t => STOCK_TICKERS[t]);
+
+  let stockPrices = {};
+  if (stockTickers.length > 0) {
+    stockPrices = await fetchStockPrices(stockTickers);
+  }
+
+  // ---------- MERGE ----------
+  const newPrices = {
+    ...cryptoPrices,
+    ...stockPrices,
+  };
+
+  setPrices(newPrices);
+
+  const now = new Date();
+  setLastUpdated(
+    now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0")
+  );
+}
+async function fetchStockPrices(tickers) {
+  const apiKey = "https://api.twelvedata.com/time_series?apikey=967a2fc9b6dc4e5e82f7630acac1a241&symbol=AAPL&interval=1min";
+
+  const results = {};
+
+  await Promise.all(
+    tickers.map(async (ticker) => {
+      try {
+        const res = await fetch(
+          `https://api.twelvedata.com/price?symbol=${ticker}&apikey=${apiKey}`
+        );
+
+        const data = await res.json();
+
+        if (data.price) {
+          results[ticker] = parseFloat(data.price);
+        }
+      } catch (e) {
+        console.warn("Stock price error:", ticker, e);
+      }
+    })
+  );
+
+  return results;
+}
   async function loadAll() {
     setLoading(true);
     const { data: assetsData } = await supabase.from("assets").select("*").order("id");
