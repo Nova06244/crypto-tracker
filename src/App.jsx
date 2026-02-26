@@ -726,7 +726,6 @@ export default function CryptoTracker() {
         const res = await fetch(
           `https://api.twelvedata.com/price?symbol=${ticker}&apikey=${TWELVEDATA_API_KEY}`
         );
-
         const data = await res.json();
 
         if (data?.price) {
@@ -739,9 +738,6 @@ export default function CryptoTracker() {
       }
     })
   );
-
-  return results;
-}
 
   return results;
 }
