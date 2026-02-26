@@ -719,27 +719,30 @@ export default function CryptoTracker() {
   );
 }
 async function fetchStockPrices(tickers) {
-  const apiKey = "https://api.twelvedata.com/time_series?apikey=967a2fc9b6dc4e5e82f7630acac1a241&symbol=AAPL&interval=1min";
-
   const results = {};
 
   await Promise.all(
     tickers.map(async (ticker) => {
       try {
         const res = await fetch(
-          `https://api.twelvedata.com/price?symbol=${ticker}&apikey=${apiKey}`
+          `https://api.twelvedata.com/price?symbol=${ticker}&apikey=${TWELVEDATA_API_KEY}`
         );
 
         const data = await res.json();
 
-        if (data.price) {
+        if (data?.price) {
           results[ticker] = parseFloat(data.price);
+        } else {
+          console.warn("No stock price:", ticker, data);
         }
       } catch (e) {
         console.warn("Stock price error:", ticker, e);
       }
     })
   );
+
+  return results;
+}
 
   return results;
 }
