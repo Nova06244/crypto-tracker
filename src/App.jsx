@@ -684,11 +684,11 @@ export default function CryptoTracker() {
       const data = await res.json();
 
       tickers.forEach(t => {
-        const id = COINGECKO_IDS[t];
-        if (id && data[id]?.eur) {
-          cryptoPrices[t] = data[id].eur;
-        }
-      });
+  const id = (COINGECKO_IDS[t] || "").trim();
+  if (id && data[id]?.eur != null) {
+    cryptoPrices[t] = data[id].eur;
+  }
+});
     } catch (e) {
       console.warn("Crypto fetch failed:", e);
     }
@@ -709,11 +709,12 @@ export default function CryptoTracker() {
   };
 
   console.log("PRICES LOADED:", newPrices);
-    
-  const now = new Date();
-  setLastUpdated(
-    now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0")
-  );
+setPrices(newPrices);
+
+const now = new Date();
+setLastUpdated(
+  now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0")
+);
 }
   
   async function fetchStockPrices(tickers) {
