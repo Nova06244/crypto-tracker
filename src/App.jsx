@@ -20,10 +20,10 @@ const COINGECKO_IDS = {
   UNI: "uniswap", ATOM: "cosmos", LTC: "litecoin", TON: "the-open-network",
 
   // ✅ AJOUTS
-  SEI: "sei ",                 
+  SEI: "sei",                 
   XLM: "stellar",            
   BGB: "bitget-token",       
-  ONDO: "ondo ",               
+  ONDO: "ondo",               
   SPX: "spx6900",            
   VELO: "velo",                // Velo (Protocol)  (https://www.coingecko.com/en/coins/velo?utm_source=chatgpt.com)
  };
