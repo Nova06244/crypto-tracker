@@ -23,7 +23,7 @@ const COINGECKO_IDS = {
   SEI: "sei",                 
   XLM: "stellar",            
   BGB: "bitget-token",       
-  ONDO: "ondo",               
+  ONDO: "ondo-finance",               
   SPX: "spx6900",            
   VELO: "velo",                // Velo (Protocol)  (https://www.coingecko.com/en/coins/velo?utm_source=chatgpt.com)
  };
