@@ -13,7 +13,20 @@ const COINGECKO_IDS = {
   ADA: "cardano", CFG: "centrifuge", LINK: "chainlink", DOT: "polkadot",
   BNB: "binancecoin", AVAX: "avalanche-2", MATIC: "matic-network",
   UNI: "uniswap", ATOM: "cosmos", LTC: "litecoin", TON: "the-open-network",
-};
+
+  // ✅ AJOUTS
+  SEI: "sei",                 // Sei  [oai_citation:1‡CoinGecko](https://www.coingecko.com/en/coins/sei?utm_source=chatgpt.com)
+  XLM: "stellar",             // Stellar  [oai_citation:2‡CoinGecko](https://www.coingecko.com/en/coins/stellar?utm_source=chatgpt.com)
+  BGB: "bitget-token",        // Bitget Token  [oai_citation:3‡CoinGecko](https://www.coingecko.com/en/coins/bitget-token?utm_source=chatgpt.com)
+  ONDO: "ondo",               // Ondo  [oai_citation:4‡CoinGecko](https://www.coingecko.com/en/coins/ondo?utm_source=chatgpt.com)
+  SPX: "spx6900",             // SPX6900  [oai_citation:5‡CoinGecko](https://www.coingecko.com/en/coins/spx6900?utm_source=chatgpt.com)
+
+  // Uranium tokenisé (CoinGecko: Uranium, ticker XU3O8)
+  XU3O8: "uranium",            //  [oai_citation:6‡CoinGecko](https://www.coingecko.com/en/coins/uranium?utm_source=chatgpt.com)
+
+  // Velo : attention, il existe 2 tokens connus (choisis celui que TU suis)
+  VELO: "velo",                // Velo (Protocol)  [oai_citation:7‡CoinGecko](https://www.coingecko.com/en/coins/velo?utm_source=chatgpt.com)
+ };
 
 const DEFAULT_ASSETS = [
   { name: "SOLANA", ticker: "SOL", objective: "X10", color: "#14F195" },
@@ -646,7 +659,7 @@ export default function CryptoTracker() {
   }
 
   async function fetchPrices(assetList) {
-    const tickers = (assetList || assets).map(a => a.ticker);
+    const tickers = (assetList || assets).map(a => (a.ticker || "").trim().toUpperCase());
     const ids = tickers.map(t => COINGECKO_IDS[t]).filter(Boolean);
     if (ids.length === 0) return;
     setPricesLoading(true);
