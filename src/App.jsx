@@ -20,7 +20,7 @@ const COINGECKO_IDS = {
   UNI: "uniswap", ATOM: "cosmos", LTC: "litecoin", TON: "the-open-network",
 
   // ✅ AJOUTS
-  SEI: "sei",                 
+  SEI: "sei-network",                 
   XLM: "stellar",            
   BGB: "bitget-token",       
   ONDO: "ondo-finance",               
