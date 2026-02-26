@@ -20,15 +20,12 @@ const COINGECKO_IDS = {
   UNI: "uniswap", ATOM: "cosmos", LTC: "litecoin", TON: "the-open-network",
 
   // ✅ AJOUTS
-  SEI: "sei ",                 // Sei  [oai_citation:1‡CoinGecko](https://www.coingecko.com/en/coins/sei?utm_source=chatgpt.com)
-  XLM: "stellar",             // Stellar  [oai_citation:2‡CoinGecko](https://www.coingecko.com/en/coins/stellar?utm_source=chatgpt.com)
-  BGB: "bitget-token",        // Bitget Token  [oai_citation:3‡CoinGecko](https://www.coingecko.com/en/coins/bitget-token?utm_source=chatgpt.com)
-  ONDO: "ondo ",               // Ondo  [oai_citation:4‡CoinGecko](https://www.coingecko.com/en/coins/ondo?utm_source=chatgpt.com)
-  SPX: "spx6900",             // SPX6900  [oai_citation:5‡CoinGecko](https://www.coingecko.com/en/coins/spx6900?utm_source=chatgpt.com)
-  XU3O8: "uranium",            //  [oai_citation:6‡CoinGecko](https://www.coingecko.com/en/coins/uranium?utm_source=chatgpt.com)
-
-  // Velo : attention, il existe 2 tokens connus (choisis celui que TU suis)
-  VELO: "velo",                // Velo (Protocol)  [oai_citation:7‡CoinGecko](https://www.coingecko.com/en/coins/velo?utm_source=chatgpt.com)
+  SEI: "sei ",                 
+  XLM: "stellar",            
+  BGB: "bitget-token",       
+  ONDO: "ondo ",               
+  SPX: "spx6900",            
+  VELO: "velo",                // Velo (Protocol)  (https://www.coingecko.com/en/coins/velo?utm_source=chatgpt.com)
  };
 
 const DEFAULT_ASSETS = [
@@ -718,8 +715,9 @@ export default function CryptoTracker() {
     now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0")
   );
 }
-  const TWELVEDATA_API_KEY = "967a2fc9b6dc4e5e82f7630acac1a241";
+  
   async function fetchStockPrices(tickers) {
+  const TWELVEDATA_API_KEY = "967a2fc9b6dc4e5e82f7630acac1a241";
   const results = {};
 
   await Promise.all(
