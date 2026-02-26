@@ -670,8 +670,9 @@ export default function CryptoTracker() {
 
   // ---------- CRYPTO ----------
   const cryptoIds = tickers
-    .map(t => COINGECKO_IDS[t])
-    .filter(Boolean);
+  .map(t => COINGECKO_IDS[t])
+  .filter(Boolean)
+  .map(id => id.trim());
 
   let cryptoPrices = {};
 
