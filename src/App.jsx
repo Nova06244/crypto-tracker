@@ -799,7 +799,10 @@ async function fetchStockPrices(tickers) {
   const totalMonthly = Array(12).fill(0);
   assetData.forEach(a => a.monthlyData.forEach((v, i) => { totalMonthly[i] += v; }));
   const maxMonthly = Math.max(...totalMonthly, 1);
-  const totalCurrentValue = assetData.reduce((s, a) => { const p = prices[a.ticker]; return s + (p && a.qtyCum > 0 ? p * a.qtyCum : 0); }, 0);
+  const totalCurrentValue = assetData.reduce((s, a) => {
+  const p = prices[a.ticker];
+  return s + (p && a.qtyCum > 0 ? p * a.qtyCum : a.totalCum);
+}, 0);
   const totalPnl = totalCurrentValue > 0 ? totalCurrentValue - totalInvested : null;
 
   const VIEWS = [
