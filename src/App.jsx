@@ -711,14 +711,15 @@ export default function CryptoTracker() {
     ...stockPrices,
   };
 
-  setPrices(newPrices);
-
+  console.log("PRICES LOADED:", newPrices);
+    
   const now = new Date();
   setLastUpdated(
     now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0")
   );
 }
-async function fetchStockPrices(tickers) {
+  const TWELVEDATA_API_KEY = "967a2fc9b6dc4e5e82f7630acac1a241";
+  async function fetchStockPrices(tickers) {
   const results = {};
 
   await Promise.all(
