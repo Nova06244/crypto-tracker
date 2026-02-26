@@ -27,9 +27,9 @@ const COINGECKO_IDS = {
  };
 
 const DEFAULT_ASSETS = [
-  { name: "SOLANA", ticker: "SOL", objective: "X10", color: "#14F195" },
-  { name: "ETHEREUM", ticker: "ETH", objective: "X4", color: "#627EEA" },
-  { name: "BITCOIN", ticker: "BTC", objective: "X2", color: "#F7931A" },
+  { name: "SOLANA", ticker: "SOL", objective: "", color: "#14F195" },
+  { name: "ETHEREUM", ticker: "ETH", objective: "", color: "#627EEA" },
+  { name: "BITCOIN", ticker: "BTC", objective: "", color: "#F7931A" },
   { name: "XRP", ticker: "XRP", objective: "", color: "#23292F" },
   { name: "DOGECOIN", ticker: "DOGE", objective: "", color: "#C2A633" },
   { name: "SHIBA INU", ticker: "SHIB", objective: "", color: "#E3420A" },
