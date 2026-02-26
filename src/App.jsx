@@ -15,10 +15,10 @@ const COINGECKO_IDS = {
   UNI: "uniswap", ATOM: "cosmos", LTC: "litecoin", TON: "the-open-network",
 
   // ✅ AJOUTS
-  SEI: "SEI",                 // Sei  [oai_citation:1‡CoinGecko](https://www.coingecko.com/en/coins/sei?utm_source=chatgpt.com)
+  SEI: "sei ",                 // Sei  [oai_citation:1‡CoinGecko](https://www.coingecko.com/en/coins/sei?utm_source=chatgpt.com)
   XLM: "stellar",             // Stellar  [oai_citation:2‡CoinGecko](https://www.coingecko.com/en/coins/stellar?utm_source=chatgpt.com)
   BGB: "bitget-token",        // Bitget Token  [oai_citation:3‡CoinGecko](https://www.coingecko.com/en/coins/bitget-token?utm_source=chatgpt.com)
-  ONDO: "ONDO",               // Ondo  [oai_citation:4‡CoinGecko](https://www.coingecko.com/en/coins/ondo?utm_source=chatgpt.com)
+  ONDO: "ondo ",               // Ondo  [oai_citation:4‡CoinGecko](https://www.coingecko.com/en/coins/ondo?utm_source=chatgpt.com)
   SPX: "spx6900",             // SPX6900  [oai_citation:5‡CoinGecko](https://www.coingecko.com/en/coins/spx6900?utm_source=chatgpt.com)
   XU3O8: "uranium",            //  [oai_citation:6‡CoinGecko](https://www.coingecko.com/en/coins/uranium?utm_source=chatgpt.com)
 
