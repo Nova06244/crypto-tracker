@@ -717,23 +717,56 @@ setLastUpdated(
 );
 }
   
-  async function fetchStockPrices(tickers) {
-  const TWELVEDATA_API_KEY = "967a2fc9b6dc4e5e82f7630acac1a241";
+ async function fetchStockPrices(tickers) {
+  const ALPHAVANTAGE_API_KEY = "O72E6UJNVWBFZJGV";
   const results = {};
 
+  // 1) FX USD -> EUR (un seul appel)
+  let usdToEur = null;
+  try {
+    const fxUrl =
+      `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE` +
+      `&from_currency=USD&to_currency=EUR&apikey=${ALPHAVANTAGE_API_KEY}`;
+
+    const fxRes = await fetch(fxUrl);
+    const fxData = await fxRes.json();
+
+    // Champ Alpha Vantage: "Realtime Currency Exchange Rate" -> "5. Exchange Rate"
+    const rateStr = fxData?.["Realtime Currency Exchange Rate"]?.["5. Exchange Rate"];
+    usdToEur = rateStr ? parseFloat(rateStr) : null;
+
+    if (!usdToEur || Number.isNaN(usdToEur)) {
+      console.warn("FX USD->EUR indisponible:", fxData);
+      usdToEur = null;
+    }
+  } catch (e) {
+    console.warn("FX USD->EUR error:", e);
+  }
+
+  // 2) Prix actions via GLOBAL_QUOTE (1 appel par ticker)
   await Promise.all(
     tickers.map(async (ticker) => {
       try {
-        const res = await fetch(
-          `https://api.twelvedata.com/price?symbol=${ticker}&apikey=${TWELVEDATA_API_KEY}`
-        );
+        const url =
+          `https://www.alphavantage.co/query?function=GLOBAL_QUOTE` +
+          `&symbol=${encodeURIComponent(ticker)}&apikey=${ALPHAVANTAGE_API_KEY}`;
+
+        const res = await fetch(url);
         const data = await res.json();
 
-        if (data?.price) {
-          results[ticker] = parseFloat(data.price);
-        } else {
+        // Champ Alpha Vantage: "Global Quote" -> "05. price"
+        const priceStr = data?.["Global Quote"]?.["05. price"];
+        const priceUsd = priceStr ? parseFloat(priceStr) : null;
+
+        if (!priceUsd || Number.isNaN(priceUsd)) {
           console.warn("No stock price:", ticker, data);
+          return;
         }
+
+        // 3) Conversion USD -> EUR (si FX dispo)
+        const priceEur = usdToEur ? priceUsd * usdToEur : priceUsd;
+
+        results[ticker] = priceEur;
       } catch (e) {
         console.warn("Stock price error:", ticker, e);
       }
