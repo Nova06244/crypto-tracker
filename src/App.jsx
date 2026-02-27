@@ -658,18 +658,16 @@ export default function CryptoTracker() {
     setTimeout(() => setToast(null), 3000);
   }
 
-  async function fetchPrices(assetList) {
+async function fetchPrices(assetList) {
   const list = assetList || assets;
 
-  const tickers = list.map(a =>
-    (a.ticker || "").trim().toUpperCase()
-  );
+  const tickers = list.map(a => (a.ticker || "").trim().toUpperCase());
 
   // ---------- CRYPTO ----------
   const cryptoIds = tickers
-  .map(t => COINGECKO_IDS[t])
-  .filter(Boolean)
-  .map(id => id.trim());
+    .map(t => COINGECKO_IDS[t])
+    .filter(Boolean)
+    .map(id => id.trim());
 
   let cryptoPrices = {};
 
@@ -682,13 +680,13 @@ export default function CryptoTracker() {
 
       const res = await fetch(url);
       const data = await res.json();
-      
+
       tickers.forEach(t => {
-  const id = (COINGECKO_IDS[t] || "").trim();
-  if (id && data[id]?.eur != null) {
-    cryptoPrices[t] = data[id].eur;
-  }
-});
+        const id = (COINGECKO_IDS[t] || "").trim();
+        if (id && data[id]?.eur != null) {
+          cryptoPrices[t] = data[id].eur;
+        }
+      });
     } catch (e) {
       console.warn("Crypto fetch failed:", e);
     }
@@ -703,24 +701,77 @@ export default function CryptoTracker() {
   }
 
   // ---------- MERGE ----------
-  // ---------- MERGE ----------
-const newPrices = {
-  ...cryptoPrices,
-  ...stockPrices,
-};
+  const newPrices = {
+    ...cryptoPrices,
+    ...stockPrices,
+  };
 
-console.log("PRICES LOADED:", newPrices);
+  console.log("PRICES LOADED:", newPrices);
 
-setPrices(prev => ({
-  ...prev,
-  ...newPrices,
-}));
+  setPrices(prev => ({
+    ...prev,
+    ...newPrices,
+  }));
 
-const now = new Date();
-setLastUpdated(
-  now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0")
-);
-  
+  const now = new Date();
+  setLastUpdated(now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0"));
+} // ✅ IMPORTANT : fermeture de fetchPrices ici
+
+
+async function fetchStockPrices(tickers) {
+  const ALPHAVANTAGE_API_KEY = "O72E6UJNVWBFZJGV";
+  const results = {};
+
+  // 1) FX USD -> EUR
+  let usdToEur = null;
+  try {
+    const fxUrl =
+      `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE` +
+      `&from_currency=USD&to_currency=EUR&apikey=${ALPHAVANTAGE_API_KEY}`;
+
+    const fxRes = await fetch(fxUrl);
+    const fxData = await fxRes.json();
+
+    const rateStr = fxData?.["Realtime Currency Exchange Rate"]?.["5. Exchange Rate"];
+    usdToEur = rateStr ? parseFloat(rateStr) : null;
+
+    if (!usdToEur || Number.isNaN(usdToEur)) {
+      console.warn("FX USD->EUR indisponible:", fxData);
+      usdToEur = null;
+    }
+  } catch (e) {
+    console.warn("FX USD->EUR error:", e);
+  }
+
+  // 2) Prix actions (1 appel par ticker)
+  await Promise.all(
+    tickers.map(async (ticker) => {
+      try {
+        const url =
+          `https://www.alphavantage.co/query?function=GLOBAL_QUOTE` +
+          `&symbol=${encodeURIComponent(ticker)}&apikey=${ALPHAVANTAGE_API_KEY}`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const priceStr = data?.["Global Quote"]?.["05. price"];
+        const priceUsd = priceStr ? parseFloat(priceStr) : null;
+
+        if (!priceUsd || Number.isNaN(priceUsd)) {
+          console.warn("No stock price:", ticker, data);
+          return;
+        }
+
+        const priceEur = usdToEur ? priceUsd * usdToEur : priceUsd;
+        results[ticker] = priceEur;
+      } catch (e) {
+        console.warn("Stock price error:", ticker, e);
+      }
+    })
+  );
+
+  return results;
+}
  async function fetchStockPrices(tickers) {
   const ALPHAVANTAGE_API_KEY = "O72E6UJNVWBFZJGV";
   const results = {};
