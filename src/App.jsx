@@ -703,19 +703,23 @@ export default function CryptoTracker() {
   }
 
   // ---------- MERGE ----------
-  setPrices(prev => ({
+  // ---------- MERGE ----------
+const newPrices = {
+  ...cryptoPrices,
+  ...stockPrices,
+};
+
+console.log("PRICES LOADED:", newPrices);
+
+setPrices(prev => ({
   ...prev,
   ...newPrices,
 }));
-
-  console.log("PRICES LOADED:", newPrices);
-setPrices(newPrices);
 
 const now = new Date();
 setLastUpdated(
   now.getHours() + ":" + String(now.getMinutes()).padStart(2, "0")
 );
-}
   
  async function fetchStockPrices(tickers) {
   const ALPHAVANTAGE_API_KEY = "O72E6UJNVWBFZJGV";
