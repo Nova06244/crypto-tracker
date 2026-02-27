@@ -38,7 +38,7 @@ const DEFAULT_ASSETS = [
   { name: "PEPE", ticker: "PEPE", objective: "", color: "#4D8C3B" },
   { name: "SUI", ticker: "SUI", objective: "", color: "#4DA2FF" },
   { name: "CARDANO", ticker: "ADA", objective: "", color: "#0033AD" },
-  { name: "CENTRIFUGE", ticker: "CFG", objective: "", color: "#FFC012" },
+  { name: "WRAPPED CENTRIFUGE", ticker: "CFG", objective: "", color: "#FFC012" },
   { name: "CHAINLINK", ticker: "LINK", objective: "", color: "#2A5ADA" },
   { name: "POLKADOT", ticker: "DOT", objective: "", color: "#E6007A" },
   { name: "BNB", ticker: "BNB", objective: "", color: "#F3BA2F" },
