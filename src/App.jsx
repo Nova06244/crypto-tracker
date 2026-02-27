@@ -682,7 +682,7 @@ export default function CryptoTracker() {
 
       const res = await fetch(url);
       const data = await res.json();
-
+      
       tickers.forEach(t => {
   const id = (COINGECKO_IDS[t] || "").trim();
   if (id && data[id]?.eur != null) {
@@ -703,10 +703,10 @@ export default function CryptoTracker() {
   }
 
   // ---------- MERGE ----------
-  const newPrices = {
-    ...cryptoPrices,
-    ...stockPrices,
-  };
+  setPrices(prev => ({
+  ...prev,
+  ...newPrices,
+}));
 
   console.log("PRICES LOADED:", newPrices);
 setPrices(newPrices);
@@ -730,7 +730,8 @@ setLastUpdated(
 
     const fxRes = await fetch(fxUrl);
     const fxData = await fxRes.json();
-
+    
+    
     // Champ Alpha Vantage: "Realtime Currency Exchange Rate" -> "5. Exchange Rate"
     const rateStr = fxData?.["Realtime Currency Exchange Rate"]?.["5. Exchange Rate"];
     usdToEur = rateStr ? parseFloat(rateStr) : null;
@@ -753,7 +754,8 @@ setLastUpdated(
 
         const res = await fetch(url);
         const data = await res.json();
-
+        console.log("ALPHAVANTAGE RAW", ticker, data);
+        
         // Champ Alpha Vantage: "Global Quote" -> "05. price"
         const priceStr = data?.["Global Quote"]?.["05. price"];
         const priceUsd = priceStr ? parseFloat(priceStr) : null;
