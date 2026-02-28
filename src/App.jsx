@@ -218,7 +218,7 @@ function AssetCard({ asset, year, onDelete, prices }) {
   const [expanded, setExpanded] = useState(false);
   const historyEntries = asset.entriesCum.filter(e => e.type === "history");
   const investEntries = asset.entriesCum.filter(e => e.type === "invest");
-  const price = prices[asset.ticker];
+  const priceObj = prices[asset.ticker]; const price = priceObj?.eur;
   const currentValue = price && asset.qtyCum > 0 ? price * asset.qtyCum : null;
   const pnl = currentValue != null ? currentValue - asset.totalCum : null;
   const pnlPct = pnl != null && asset.totalCum > 0 ? (pnl / asset.totalCum) * 100 : null;
@@ -313,7 +313,7 @@ function MarketView({ assetData, prices, pricesLoading, lastUpdated, onRefresh }
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {activeAssets.map(asset => {
-          const price = prices[asset.ticker];
+          const priceObj = prices[asset.ticker]; const price = priceObj?.eur;
           const currentValue = price && asset.qtyCum > 0 ? price * asset.qtyCum : null;
           const pnl = currentValue != null ? currentValue - asset.totalCum : null;
           const pnlPct = pnl != null && asset.totalCum > 0 ? (pnl / asset.totalCum) * 100 : null;
@@ -364,7 +364,8 @@ function StatsView({ assetData, entries, prices }) {
   entries.forEach(e => { if (e.year === new Date().getFullYear()) monthlyTotals[e.month] += e.investment || 0; });
   const maxMonthly = Math.max(...monthlyTotals, 1);
   const assetsWithPnl = activeAssets.map(a => {
-    const price = prices[a.ticker];
+    const priceObj = prices[a.ticker];
+const price = priceObj?.eur;
     const currentValue = price && a.qtyCum > 0 ? price * a.qtyCum : null;
     const pnl = currentValue != null ? currentValue - a.totalCum : null;
     const pnlPct = pnl != null && a.totalCum > 0 ? (pnl / a.totalCum) * 100 : null;
@@ -410,7 +411,7 @@ function StatsView({ assetData, entries, prices }) {
           <div style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.4)", letterSpacing: 2, marginBottom: 16 }}>INVESTI vs VALEUR ACTUELLE</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {activeAssets.map(asset => {
-              const price = prices[asset.ticker];
+              const priceObj = prices[asset.ticker]; const price = priceObj?.eur;
               const currentValue = price && asset.qtyCum > 0 ? price * asset.qtyCum : null;
               const maxVal = Math.max(asset.totalCum, currentValue || 0, 1);
               const investedWidth = (asset.totalCum / maxVal) * 100;
@@ -482,7 +483,10 @@ export default function CryptoTracker() {
         const priceStr = data?.["Global Quote"]?.["05. price"];
         const priceUsd = parseFloat(priceStr);
         if (!isNaN(priceUsd) && priceUsd > 0) {
-          results[ticker] = priceUsd * usdToEur; // Conversion garantie
+          results[ticker] = {
+  usd: priceUsd,
+  eur: priceUsd * usdToEur,
+};// Conversion garantie
           console.log(ticker + " USD:" + priceUsd + " EUR:" + results[ticker]);
         } else {
           console.warn("Pas de prix pour", ticker, data);
@@ -510,7 +514,7 @@ export default function CryptoTracker() {
         const data = await res.json();
         tickers.forEach(t => {
           const id = (COINGECKO_IDS[t] || "").trim();
-          if (id && data[id]?.eur != null) cryptoPrices[t] = data[id].eur;
+          if (id && data[id]?.eur != null) cryptoPrices[t] = { eur: data[id].eur };
         });
       } catch (e) { console.warn("CoinGecko error:", e); }
     }
