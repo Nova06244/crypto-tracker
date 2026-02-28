@@ -284,7 +284,10 @@ function AssetCard({ asset, year, onDelete, prices }) {
 function MarketView({ assetData, prices, pricesLoading, lastUpdated, onRefresh }) {
   const activeAssets = assetData.filter(a => a.totalCum > 0 || a.qtyCum > 0);
   const totalInvested = activeAssets.reduce((s, a) => s + a.totalCum, 0);
-  const totalCurrentValue = activeAssets.reduce((s, a) => { const p = prices[a.ticker]; return s + (p && a.qtyCum > 0 ? p * a.qtyCum : a.totalCum); }, 0);
+  const totalCurrentValue = activeAssets.reduce((s, a) => {
+  const p = prices[a.ticker]?.eur;
+  return s + (p && a.qtyCum > 0 ? p * a.qtyCum : a.totalCum);
+}, 0);
   const totalPnl = totalCurrentValue - totalInvested;
   const totalPnlPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
   return (
@@ -531,7 +534,7 @@ export default function CryptoTracker() {
     }
 
     // STOCKS
-    const stockTickers = tickers.filter(t => STOCK_TICKERS[t]);
+    const stockTickers = tickers.filter(t => !COINGECKO_IDS[t]);
     const stockPrices = stockTickers.length > 0 ? await fetchStockPrices(stockTickers) : {};
 
     const merged = { ...cryptoPrices, ...stockPrices };
