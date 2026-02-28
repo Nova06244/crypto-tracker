@@ -330,7 +330,18 @@ function MarketView({ assetData, prices, pricesLoading, lastUpdated, onRefresh }
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 2 }}>PRIX (EUR)</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{price ? fmtPrice(price) : <span style={{ color: "rgba(255,255,255,0.2)" }}>N/A</span>}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{priceObj?.eur != null ? (
+  <div style={{ lineHeight: 1.1 }}>
+    <div>{fmtPrice(priceObj.eur)}</div>
+    {priceObj.usd != null && (
+      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 3 }}>
+        ${Number(priceObj.usd).toFixed(2)} USD
+      </div>
+    )}
+  </div>
+) : (
+  <span style={{ color: "rgba(255,255,255,0.2)" }}>N/A</span>
+)}
               </div>
               <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 2 }}>QUANTITE</div>
@@ -569,7 +580,10 @@ export default function CryptoTracker() {
   const totalMonthly = Array(12).fill(0);
   assetData.forEach(a => a.monthlyData.forEach((v, i) => { totalMonthly[i] += v; }));
   const maxMonthly = Math.max(...totalMonthly, 1);
-  const totalCurrentValue = assetData.reduce((s, a) => { const p = prices[a.ticker]; return s + (p && a.qtyCum > 0 ? p * a.qtyCum : a.totalCum); }, 0);
+  const totalCurrentValue = assetData.reduce((s, a) => {
+  const p = prices[a.ticker]?.eur;
+  return s + (p && a.qtyCum > 0 ? p * a.qtyCum : a.totalCum);
+}, 0);
   const totalPnl = totalCurrentValue > 0 ? totalCurrentValue - totalInvested : null;
 
   const VIEWS = [
