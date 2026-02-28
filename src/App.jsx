@@ -189,7 +189,6 @@ function AddAssetModal({ isOpen, onClose, onAdd }) {
           <div><label style={labelStyle}>Ticker</label><input value={ticker} onChange={e => setTicker(e.target.value)} placeholder="AVAX" style={inputStyle} /></div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div><label style={labelStyle}>Objectif</label><input value={objective} onChange={e => setObjective(e.target.value)} placeholder="X5" style={inputStyle} /></div>
           <div><label style={labelStyle}>Couleur</label><div style={{ display: "flex", gap: 8, alignItems: "center" }}><input type="color" value={color} onChange={e => setColor(e.target.value)} style={{ width: 40, height: 38, border: "none", borderRadius: 8, cursor: "pointer" }} /><span style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>{color}</span></div></div>
         </div>
         <button onClick={handleSubmit} disabled={saving} style={{ marginTop: 4, padding: "12px 0", width: "100%", background: "linear-gradient(135deg,#14F195,#3a7bd5)", border: "none", borderRadius: 10, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{saving ? "Enregistrement..." : "Ajouter l actif"}</button>
